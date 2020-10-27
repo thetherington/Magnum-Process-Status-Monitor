@@ -274,6 +274,7 @@ class processMonitor:
                                 "d_cpu_p": 0,
                                 "d_memory_p": 0,
                                 "l_memory_b": 0,
+                                "i_pid": None,
                                 "s_cluster": None,
                                 "s_status": None,
                             }
@@ -312,6 +313,9 @@ class processMonitor:
 
                         elif "Cluster: Resource" in metric[0]:
                             service_def["s_cluster"] = metric[1]
+
+                        elif "Main PID" in metric[0]:
+                            service_def["i_pid"] = metric[1]
 
                         service_def["s_status"] = metric[2]
 
