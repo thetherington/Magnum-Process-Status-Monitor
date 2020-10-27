@@ -196,10 +196,34 @@ class processMonitor:
 
     def group_metrics(self, metrics):
         def create_service_dict():
+
             services = {}
             for service in self.monitor_services:
                 services.update({service: []})
+
             return services
+
+        def autogenerate_service_dict(metric_list):
+
+            Services = {}
+
+            for metric in metric_list:
+
+                # next metric if any found service match.
+                # saves computing with the re libarary
+                if any(service in metric[0] for service in Services.keys()):
+                    continue
+
+                else:
+
+                    # access the process name from a string like "Services: magstoresrv Total Resident Memory"
+                    labelPattern = re.compile(r"Services:\s([a-zA-Z\-]*)\s.*")
+                    matchLabel = labelPattern.finditer(metric[0])
+
+                    for match in matchLabel:
+                        Services.update({match.group(1): []})
+
+            return Services
 
         if metrics:
 
@@ -209,10 +233,14 @@ class processMonitor:
             for _, hostCollection in metrics.items():
 
                 # create initial host trees for process dict and cluster information
+                # generate a nested service tree by either the class service list or call the
+                # auto generating function to discovery all the services from the metrics list.
                 process_metrics.update(
                     {
                         hostCollection["hostname"]: {
-                            "processes": create_service_dict(),
+                            "processes": create_service_dict()
+                            if len(self.monitor_services) > 0
+                            else autogenerate_service_dict(hostCollection["health_metrics"]),
                             "overall_health": hostCollection["overall_health"],
                         }
                     }
