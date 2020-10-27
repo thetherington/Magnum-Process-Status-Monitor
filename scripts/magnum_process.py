@@ -194,6 +194,125 @@ class processMonitor:
 
         return self.rpc_id
 
+    def group_metrics(self, metrics):
+        def create_service_dict():
+            services = {}
+            for service in self.monitor_services:
+                services.update({service: []})
+            return services
+
+        if metrics:
+
+            process_metrics = {}
+            cluster_information = {}
+
+            for _, hostCollection in metrics.items():
+
+                # create initial host trees for process dict and cluster information
+                process_metrics.update(
+                    {
+                        hostCollection["hostname"]: {
+                            "processes": create_service_dict(),
+                            "overall_health": hostCollection["overall_health"],
+                        }
+                    }
+                )
+
+                cluster_information.update(
+                    {hostCollection["hostname"]: {"cluster_information": []}}
+                )
+
+                # reference in the process and cluster info lists
+                host_processes = process_metrics[hostCollection["hostname"]]["processes"]
+                host_cluster = cluster_information[hostCollection["hostname"]][
+                    "cluster_information"
+                ]
+
+                for metric in hostCollection["health_metrics"]:
+
+                    # check each service to see if it's in the metric desction.
+                    # if so add it to the service list
+                    for service in host_processes.keys():
+                        if service in metric[0]:
+                            host_processes[service].append(metric)
+
+                    if "Cluster" in metric[0]:
+                        host_cluster.append(metric)
+
+            if self.verbose:
+                print(json.dumps(process_metrics, indent=1))
+                print(json.dumps(cluster_information, indent=1))
+
+            return process_metrics, cluster_information
+
+        return None, None
+
+    def create_status(self):
+
+        if not self.substituted:
+
+            process_metrics, cluster_information = self.group_metrics(self.get_metrics())
+
+        if process_metrics:
+
+            serviceState = {}
+
+            # get all the process state and information
+            # iterate through each host branch
+            for host, host_collection in process_metrics.items():
+
+                serviceState.update({host: {}})
+
+                for service, metrics in host_collection["processes"].items():
+
+                    # configure a default set of information that is a missing metric for easy fallback
+                    serviceState[host].update(
+                        {
+                            service: {
+                                "s_state": "Missing",
+                                "d_cpu_p": 0,
+                                "d_memory_p": 0,
+                                "l_memory_b": 0,
+                                "s_cluster": None,
+                            }
+                        }
+                    )
+
+                    # reference in the service def for easy access
+                    service_def = serviceState[host][service]
+
+                    # iterate through each of the list items for a process
+                    for metric in metrics:
+
+                        if "State" in metric[0]:
+                            service_def["s_state"] = metric[1]
+
+                        elif "CPU Usage (%)" in metric[0]:
+                            service_def["d_cpu_p"] = round(float(metric[1].strip("%")) / 100, 3)
+
+                        elif "Memory Usage (%)" in metric[0]:
+                            service_def["d_memory_p"] = round(float(metric[1].strip("%")) / 100, 3)
+
+                        elif "Total Resident Memory" in metric[0]:
+
+                            byte_convert = {
+                                "B": 1,
+                                "K": 1000,
+                                "M": 1000000,
+                                "G": 1000000000,
+                                "T": 1000000000000,
+                            }
+
+                            unit = metric[1][-1]
+                            value = metric[1].split(unit)[0]
+
+                            service_def["l_memory_b"] = int(float(value) * byte_convert[unit])
+
+                        elif "Cluster: Resource" in metric[0]:
+                            service_def["s_cluster"] = metric[1]
+
+            print(json.dumps(serviceState, indent=1))
+
 
 def main():
     pass
