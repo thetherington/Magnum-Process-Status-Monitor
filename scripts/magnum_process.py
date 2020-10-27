@@ -328,6 +328,7 @@ class processMonitor:
                                 "d_cpu_p": 0,
                                 "d_memory_p": 0,
                                 "l_memory_b": 0,
+                                "i_num_services": 0,
                                 "s_status": host_collection["overall_health"],
                             }
                         }
@@ -344,6 +345,7 @@ class processMonitor:
                             overall_health["d_cpu_p"] += metrics["d_cpu_p"]
                             overall_health["d_memory_p"] += metrics["d_memory_p"]
                             overall_health["l_memory_b"] += metrics["l_memory_b"]
+                            overall_health["i_num_services"] += 1
 
                             if metrics["s_state"] != "Running":
                                 overall_health["s_state"] = "Not Running"
