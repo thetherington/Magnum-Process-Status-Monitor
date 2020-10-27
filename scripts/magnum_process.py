@@ -298,18 +298,23 @@ class processMonitor:
 
                         elif "Total Resident Memory" in metric[0]:
 
-                            byte_convert = {
-                                "B": 1,
-                                "K": 1000,
-                                "M": 1000000,
-                                "G": 1000000000,
-                                "T": 1000000000000,
-                            }
+                            try:
 
-                            unit = metric[1][-1]
-                            value = metric[1].split(unit)[0]
+                                byte_convert = {
+                                    "B": 1,
+                                    "K": 1000,
+                                    "M": 1000000,
+                                    "G": 1000000000,
+                                    "T": 1000000000000,
+                                }
 
-                            service_def["l_memory_b"] = int(float(value) * byte_convert[unit])
+                                unit = metric[1][-1]
+                                value = metric[1].split(unit)[0]
+
+                                service_def["l_memory_b"] = int(float(value) * byte_convert[unit])
+
+                            except Exception:
+                                service_def["l_memory_b"] = 0
 
                         elif "Cluster: Resource" in metric[0]:
                             service_def["s_cluster"] = metric[1]
