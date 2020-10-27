@@ -333,6 +333,7 @@ class processMonitor:
                                 "d_memory_p": 0,
                                 "l_memory_b": 0,
                                 "i_num_services": 0,
+                                "i_num_failed": 0,
                                 "s_status": host_collection["overall_health"],
                             }
                         }
@@ -353,6 +354,7 @@ class processMonitor:
 
                             if metrics["s_state"] != "Running":
                                 overall_health["s_state"] = "Not Running"
+                                overall_health["i_num_failed"] += 1
 
             print(json.dumps(serviceState, indent=1))
 
