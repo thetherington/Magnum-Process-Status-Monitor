@@ -269,7 +269,7 @@ class processMonitor:
                     serviceState[host].update(
                         {
                             service: {
-                                "s_state": "Missing",
+                                "s_state": "Not Available",
                                 "d_cpu_p": 0,
                                 "d_memory_p": 0,
                                 "l_memory_b": 0,
