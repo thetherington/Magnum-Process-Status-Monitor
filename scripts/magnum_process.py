@@ -317,7 +317,10 @@ class processMonitor:
                         elif "Main PID" in metric[0]:
                             service_def["i_pid"] = metric[1]
 
-                        service_def["s_status"] = metric[2]
+                        # set status to value if not set or anytime if value is not "Ok"
+                        # trying to get any unkown values to stay set that's worse than "OK"
+                        if (metric[2] != "Ok") or not service_def["s_status"]:
+                            service_def["s_status"] = metric[2]
 
                 # create overall metrics if the flag is left on
                 if self.overall:
