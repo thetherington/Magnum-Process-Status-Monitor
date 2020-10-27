@@ -274,6 +274,7 @@ class processMonitor:
                                 "d_memory_p": 0,
                                 "l_memory_b": 0,
                                 "s_cluster": None,
+                                "s_status": None,
                             }
                         }
                     )
