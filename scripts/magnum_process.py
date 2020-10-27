@@ -312,6 +312,40 @@ class processMonitor:
                         elif "Cluster: Resource" in metric[0]:
                             service_def["s_cluster"] = metric[1]
 
+                        service_def["s_status"] = metric[2]
+
+                # create overall metrics if the flag is left on
+                if self.overall:
+
+                    # create initial default information for overall health
+                    # state comes from the magnum overall health state.
+                    serviceState[host].update(
+                        {
+                            "overall_health": {
+                                "s_state": "Running",
+                                "d_cpu_p": 0,
+                                "d_memory_p": 0,
+                                "l_memory_b": 0,
+                                "s_status": host_collection["overall_health"],
+                            }
+                        }
+                    )
+
+                    # create reference for easy access to def
+                    overall_health = serviceState[host]["overall_health"]
+
+                    for service, metrics in serviceState[host].items():
+
+                        # don't add the overall health metrics to itself.
+                        if service != "overall_health":
+
+                            overall_health["d_cpu_p"] += metrics["d_cpu_p"]
+                            overall_health["d_memory_p"] += metrics["d_memory_p"]
+                            overall_health["l_memory_b"] += metrics["l_memory_b"]
+
+                            if metrics["s_state"] != "Running":
+                                overall_health["s_state"] = "Not Running"
+
             print(json.dumps(serviceState, indent=1))
 
 
