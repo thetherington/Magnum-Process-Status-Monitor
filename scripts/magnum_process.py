@@ -269,6 +269,7 @@ class processMonitor:
                     serviceState[host].update(
                         {
                             service: {
+                                "s_service": service,
                                 "s_state": "Not Available",
                                 "d_cpu_p": 0,
                                 "d_memory_p": 0,
@@ -322,6 +323,7 @@ class processMonitor:
                     serviceState[host].update(
                         {
                             "overall_health": {
+                                "s_service": "overall_health",
                                 "s_state": "Running",
                                 "d_cpu_p": 0,
                                 "d_memory_p": 0,
