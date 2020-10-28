@@ -408,8 +408,8 @@ class processMonitor:
                             "s_status": None,
                             "s_maintenance": None,
                             "s_online": None,
-                            "s_resources_running": 0,
-                            "s_resources_stopped": 0,
+                            "i_resources_running": 0,
+                            "i_resources_stopped": 0,
                             "s_system": self.systemName,
                             "s_type": "redundancy",
                         }
@@ -435,10 +435,10 @@ class processMonitor:
                     if "Cluster: Resource" in item[0]:
 
                         if any(match in item[1] for match in ["Started", "Slave", "Master"]):
-                            redundancyState[host]["s_resources_running"] += 1
+                            redundancyState[host]["i_resources_running"] += 1
 
                         else:
-                            redundancyState[host]["s_resources_stopped"] += 1
+                            redundancyState[host]["i_resources_stopped"] += 1
 
                 # calculate redundancy status description. if server is offline then punt out a Server Error Offline
                 # if both token and ip1 is started or stopped then assume it's working Active or Standby
