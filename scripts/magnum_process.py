@@ -18,7 +18,7 @@ class processMonitor:
         self.verbose = None
 
         self.overall = True
-        self.systemName = None
+        self.systemName = "Magnum"
         self.redundancyStateServices = None
         self.monitor_services = []
 
