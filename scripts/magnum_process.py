@@ -50,9 +50,6 @@ class processMonitor:
                 self.redundancyStateServices = value
                 self.monitor_services += value
 
-            if ("legacy" in key) and (value):
-                self.legacy = True
-
         self.rpc_connect()
 
     def do_ping(self):
