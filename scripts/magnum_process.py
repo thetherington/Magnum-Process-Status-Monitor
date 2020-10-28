@@ -285,6 +285,10 @@ class processMonitor:
 
             process_metrics, cluster_information = self.group_metrics(self.get_metrics())
 
+        else:
+
+            process_metrics, cluster_information = self.group_metrics(self.substituted)
+
         # calculate redundancy status information
         if cluster_information:
 
