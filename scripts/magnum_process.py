@@ -308,6 +308,7 @@ class processMonitor:
                                 "i_pid": None,
                                 "s_cluster": None,
                                 "s_status": None,
+                                "s_type": "service",
                             }
                         }
                     )
@@ -374,6 +375,7 @@ class processMonitor:
                                 "i_num_services": 0,
                                 "i_num_failed": 0,
                                 "s_status": host_collection["overall_health"],
+                                "s_type": "overall",
                             }
                         }
                     )
