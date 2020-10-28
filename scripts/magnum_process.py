@@ -392,7 +392,72 @@ class processMonitor:
                                 overall_health["s_state"] = "Not Running"
                                 overall_health["i_num_failed"] += 1
 
-            print(json.dumps(serviceState, indent=1))
+            # print(json.dumps(serviceState, indent=1))
+
+        # calculate redundancy status information
+        if cluster_information:
+
+            redundancyState = {}
+
+            for host, cluster_collection in cluster_information.items():
+
+                redundancyState.update(
+                    {
+                        host: {
+                            "s_host": host,
+                            "s_status": None,
+                            "s_maintenance": None,
+                            "s_online": None,
+                            "s_resources_running": 0,
+                            "s_resources_stopped": 0,
+                            "s_system": self.systemName,
+                            "s_type": "redundancy",
+                        }
+                    }
+                )
+
+                # tokens are the different resource names that control the cluster ip
+                # status list is used to store the state of each one to be verified later
+                clusterTokens = ["cl-token", "cl-ip1", "db-ip1", "db-token"]
+                clusterStatus = []
+
+                for item in cluster_collection["cluster_information"]:
+
+                    if "Cluster: Maintenance mode" in item[0]:
+                        redundancyState[host]["s_maintenance"] = item[1]
+
+                    elif "Cluster: Online (%s)" % (host) in item[0]:
+                        redundancyState[host]["s_online"] = item[1]
+
+                    elif any(match in item[0] for match in clusterTokens):
+                        clusterStatus.append(item[1])
+
+                    if "Cluster: Resource" in item[0]:
+
+                        if any(match in item[1] for match in ["Started", "Slave", "Master"]):
+                            redundancyState[host]["s_resources_running"] += 1
+
+                        else:
+                            redundancyState[host]["s_resources_stopped"] += 1
+
+                # calculate redundancy status description. if server is offline then punt out a Server Error Offline
+                # if both token and ip1 is started or stopped then assume it's working Active or Standby
+                # if both do not match than assume there's a server error. probably need to add more combinations in the future.
+                if redundancyState[host]["s_online"] == "Yes":
+
+                    if all(status == "Started" for status in clusterStatus):
+                        redundancyState[host]["s_status"] = "Server Active/Online"
+
+                    elif all(status == "Stopped" for status in clusterStatus):
+                        redundancyState[host]["s_status"] = "Server Standby/Online"
+
+                    else:
+                        redundancyState[host]["s_status"] = "Server Error Online"
+
+                else:
+                    redundancyState[host]["s_status"] = "Server Error Offline"
+
+            print(json.dumps(redundancyState, indent=1))
 
 
 def main():
