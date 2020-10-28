@@ -19,7 +19,7 @@ class processMonitor:
 
         self.overall = True
         self.systemName = "Magnum"
-        self.redundancyStateServices = None
+        self.redundancyStateServices = []
         self.monitor_services = []
 
         self.substituted = None
@@ -45,8 +45,11 @@ class processMonitor:
                 self.systemName = value
 
             if ("redundancy_services" in key) and (value):
+
                 self.redundancyStateServices = value
-                self.monitor_services += value
+
+                if "services" in kwargs.keys():
+                    self.monitor_services += value
 
         self.rpc_connect()
 
@@ -275,6 +278,9 @@ class processMonitor:
 
     def create_status(self):
 
+        redundancyState = None
+        serviceState = None
+
         if not self.substituted:
 
             process_metrics, cluster_information = self.group_metrics(self.get_metrics())
@@ -380,7 +386,26 @@ class processMonitor:
                     for metric in metrics:
 
                         if "State" in metric[0]:
+
+                            # set value as-is
                             service_def["s_state"] = metric[1]
+
+                            # chech if it's "Not Running" while the server redundancy is known to be in a normal Standby/Online state
+                            # and the service is known as a redundancy state service, then rewrite the state as "Standby"
+                            # otherwise just leave the value as-is.
+
+                            # incase the redundancy state did not complete.
+                            try:
+
+                                if (
+                                    metric[1] == "Not Running"
+                                    and redundancyState[host]["s_status"] == "Server Standby/Online"
+                                    and service in self.redundancyStateServices
+                                ):
+                                    service_def["s_state"] = "Standby"
+
+                            except Exception:
+                                pass
 
                         elif "CPU Usage (%)" in metric[0]:
                             service_def["d_cpu_p"] = round(float(metric[1].strip("%")) / 100, 3)
@@ -453,18 +478,20 @@ class processMonitor:
                             overall_health["l_memory_b"] += metrics["l_memory_b"]
                             overall_health["i_num_services"] += 1
 
-                            if metrics["s_state"] != "Running":
+                            if metrics["s_state"] != "Running" and metrics["s_state"] != "Standby":
                                 overall_health["s_state"] = "Not Running"
                                 overall_health["i_num_failed"] += 1
 
-            # print(json.dumps(serviceState, indent=1))
+            print(json.dumps(serviceState, indent=1))
 
 
 def main():
 
     params = {
-        "address": "10.9.1.31"
-        # "address": "10.9.1.24"
+        # "address": "10.9.1.31",
+        "address": "10.9.1.24",
+        "services": ["nginx", "mysql"],
+        "redundancy_services": ["eventd", "magnum-web-config"],
     }
 
     mag = processMonitor(**params)
