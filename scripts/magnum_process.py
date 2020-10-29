@@ -501,6 +501,10 @@ class processMonitor:
                                 overall_health["s_state"] = "Not Running"
                                 overall_health["i_num_failed"] += 1
 
+                            # fix some trailing decimal values that go on for like ever
+                            overall_health["d_cpu_p"] = round(overall_health["d_cpu_p"], 3)
+                            overall_health["d_memory_p"] = round(overall_health["d_memory_p"], 3)
+
             if self.verbose:
                 print(json.dumps(serviceState, indent=1))
 
