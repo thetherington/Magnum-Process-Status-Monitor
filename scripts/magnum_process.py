@@ -1,5 +1,7 @@
 import argparse
+import importlib
 import json
+import os
 import random
 import re
 import select
@@ -287,7 +289,19 @@ class processMonitor:
 
         else:
 
-            process_metrics, cluster_information = self.group_metrics(self.substituted)
+            import api_status
+
+            importlib.reload(api_status)
+
+            try:
+
+                sample_metrics = eval("api_status." + self.substituted)
+
+            except Exception as e:
+                print(e)
+                quit()
+
+            process_metrics, cluster_information = self.group_metrics(sample_metrics)
 
         # calculate redundancy status information
         if cluster_information:
@@ -491,14 +505,190 @@ class processMonitor:
 
 def main():
 
-    params = {
-        # "address": "10.9.1.31",
-        "address": "10.9.1.24",
-        "services": ["nginx", "mysql"],
-        "redundancy_services": ["eventd", "magnum-web-config"],
-    }
+    parser = argparse.ArgumentParser(
+        description="Magnum RPC-JSON API Poller program for service health status "
+    )
 
-    mag = processMonitor(**params)
+    sub = parser.add_subparsers(dest="manual or auto")
+    sub.required = True
+
+    sub_manual = sub.add_parser("manual", help="generate command manually")
+    sub_manual.set_defaults(which="manual")
+    sub_manual.add_argument(
+        "-IP", "--address", metavar="172.16.112.20", required=True, help="Magnum Cluster IP Address"
+    )
+    sub_manual.add_argument(
+        "-S",
+        "--services",
+        metavar="nginx mysql triton",
+        required=False,
+        nargs="+",
+        help="Services to monitor from Magnum. If not used then all services are monitored",
+    )
+    sub_manual.add_argument(
+        "-R",
+        "--redundancyservices",
+        metavar="eventd magnum-web-config",
+        required=False,
+        nargs="+",
+        help="Redundancy state services which will depend on the redundancy which use Standy",
+    )
+    sub_manual.add_argument(
+        "-N", "--system", metavar="SDVN", required=False, help="System Redundancy Group Name",
+    )
+    sub_manual.add_argument(
+        "-no-overall",
+        "--overall_disable",
+        action="store_true",
+        required=False,
+        help="Disable the overall status",
+    )
+    sub_manual.add_argument(
+        "-z",
+        "--fakeit",
+        metavar="sdvn_status",
+        required=False,
+        help="supplement some fake data from api_status file",
+    )
+    sub_manual.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        required=False,
+        help="enable a more detailed output for troubleshooting",
+    )
+
+    sub_auto = sub.add_parser(
+        "auto", help="generate command automatically from external file or from inside the script"
+    )
+    sub_auto.set_defaults(which="auto")
+    group = sub_auto.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "-F",
+        "--file",
+        metavar="file",
+        required=False,
+        help="File containing parameter options (should be in dictionary format)",
+    )
+    group.add_argument(
+        "-D",
+        "--dump",
+        required=False,
+        metavar="clienthost / sdvn",
+        help="Dump a sample json file to use to test with. sample data can be 'clienthost' or 'sdvn'",
+    )
+    group.add_argument(
+        "-S",
+        "--script",
+        required=False,
+        metavar="clienthost / sdvn",
+        help="Use the dictionary in the script to feed the arguments either 'clienthost' or 'sdvn'",
+    )
+
+    args = parser.parse_args()  # (["auto", "-S"])
+
+    # args = parser.parse_args(["manual", "-IP", "10.9.1.24", "-N", "ClientHost"])
+
+    if args.which == "manual":
+
+        params = {
+            "address": args.address,
+            "services": args.services,
+            "redundancy_services": args.redundancyservices,
+            "systemName": args.system,
+            "verbose": args.verbose,
+            "subdata": args.fakeit,
+            "disable_overall": args.overall_disable,
+        }
+
+        mag = processMonitor(**params)
+
+    if args.which == "auto":
+
+        sdvn = {
+            "address": "10.9.1.31",
+            "services": [
+                "magsysmgr",
+                "magsigmonsrv",
+                "magwampsrv",
+                "magrtrsrv",
+                "magbackupsrv",
+                "magdrvsrv",
+                "magquartz",
+                "magep3srv",
+                "magcfgsrv",
+                "triton",
+                "zeus",
+                "pacemaker",
+                "magwebcfgmgt",
+                "postgres",
+                "magselfmonsrv",
+                "magstoresrv",
+                "nginx",
+                "magwebcfgmgt",
+                "corosync",
+            ],
+            "redundancy_services": ["eventd", "magnum-web-config"],
+            "systemName": "Magnum-SDVN",
+        }
+
+        clienthost = {
+            "address": "10.9.1.24",
+            "services": ["nginx", "mysql", "zeus", "triton"],
+            "redundancy_services": ["eventd", "magnum-web-config", "nundina"],
+            "systemName": "Magnum-CH",
+        }
+
+        if args.file:
+
+            try:
+
+                with open(os.getcwd() + "\\" + args.file, "r") as f:
+                    mon_args = json.loads(f.read())
+
+                mag = processMonitor(**mon_args)
+
+            except Exception as e:
+                print(e)
+
+        if args.script or args.dump:
+
+            if (
+                args.script == "clienthost"
+                or args.script == "sdvn"
+                or args.dump == "clienthost"
+                or args.dump == "sdvn"
+            ):
+
+                params = {
+                    "verbose": None,
+                    "subdata": None,
+                    "disable_overall": None,
+                }
+
+                if args.script:
+
+                    params.update(eval(args.script))
+                    mag = processMonitor(**params)
+
+                elif args.dump:
+
+                    params.update(eval(args.dump))
+
+                    try:
+
+                        with open(os.getcwd() + "\\json_file.json", "w") as f:
+                            f.write(json.dumps(params, indent=3))
+
+                    except Exception as e:
+                        print(e)
+
+                    quit()
+
+            else:
+                print("Choose either 'clienthost' or 'sdvn'...")
+                quit()
+
     mag.create_status()
 
 
