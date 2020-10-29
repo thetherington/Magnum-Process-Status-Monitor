@@ -366,7 +366,8 @@ class processMonitor:
                 else:
                     redundancyState[host]["s_status"] = "Server Error Offline"
 
-            print(json.dumps(redundancyState, indent=1))
+            if self.verbose:
+                print(json.dumps(redundancyState, indent=1))
 
         if process_metrics:
 
@@ -500,7 +501,10 @@ class processMonitor:
                                 overall_health["s_state"] = "Not Running"
                                 overall_health["i_num_failed"] += 1
 
-            print(json.dumps(serviceState, indent=1))
+            if self.verbose:
+                print(json.dumps(serviceState, indent=1))
+
+        return serviceState, redundancyState
 
 
 def main():
@@ -689,7 +693,33 @@ def main():
                 print("Choose either 'clienthost' or 'sdvn'...")
                 quit()
 
-    mag.create_status()
+    if not mag.verbose:
+
+        input_quit = False
+        while input_quit is not "q":
+
+            services, redundancy = mag.create_status()
+
+            if services:
+
+                for host, processes in services.items():
+
+                    print(host)
+
+                    for process, metrics in processes.items():
+                        print(process, metrics)
+
+                    print("\n")
+
+            if redundancy:
+
+                for host, items in redundancy.items():
+                    print(host, items)
+
+            input_quit = input("\nType q to quit or just hit enter: ")
+
+    else:
+        mag.create_status()
 
 
 if __name__ == "__main__":
