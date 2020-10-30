@@ -59,6 +59,11 @@ class Plugin(InsitePlugin):
 
                 for _, metrics in processes.items():
 
+                    # remove None values so it doesn't break
+                    for key, value in list(metrics.items()):
+                        if value is None:
+                            metrics.pop(key, None)
+
                     document = {"fields": metrics, "host": server, "name": "service"}
 
                     documents.append(document)
@@ -66,6 +71,11 @@ class Plugin(InsitePlugin):
         if redundancy:
 
             for server, info in redundancy.items():
+
+                # remove None values so it doesn't break
+                for key, value in list(metrics.items()):
+                    if value is None:
+                        metrics.pop(key, None)
 
                 document = {"fields": info, "host": server, "name": "redundancy"}
 
