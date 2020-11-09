@@ -388,6 +388,7 @@ class processMonitor:
                             service: {
                                 "s_service": service,
                                 "s_state": "Not Available",
+                                "i_id": -1,
                                 "d_cpu_p": 0,
                                 "d_memory_p": 0,
                                 "l_memory_b": 0,
@@ -410,6 +411,9 @@ class processMonitor:
                             # set value as-is
                             service_def["s_state"] = metric[1]
 
+                            # set the id to 1 if string is running, otherwise just use 0.
+                            service_def["i_id"] = 1 if metric[1] == "Running" else 0
+
                             # chech if it's "Not Running" or "Stopped" while the server redundancy is known to be in a normal Standby/Online state
                             # and the service is known as a redundancy state service, then rewrite the state as "Standby"
                             # otherwise just leave the value as-is.
@@ -422,7 +426,9 @@ class processMonitor:
                                     and redundancyState[host]["s_status"] == "Server Standby/Online"
                                     and service in self.redundancyStateServices
                                 ):
+
                                     service_def["s_state"] = "Standby"
+                                    service_def["i_id"] = 2
 
                             except Exception:
                                 pass
