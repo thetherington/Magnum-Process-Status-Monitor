@@ -161,6 +161,7 @@ class processMonitor:
         if self.verbose:
             print("-->", msg.strip("\r\n"))
             print("<--", json.dumps(response)[0:300])
+            print(json.dumps(response, indent=1))
 
         return response
 
