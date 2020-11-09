@@ -686,7 +686,7 @@ def main():
 
                     try:
 
-                        with open(os.getcwd() + "\\json_file.json", "w") as f:
+                        with open(os.getcwd() + "\json_file.json", "w") as f:
                             f.write(json.dumps(params, indent=3))
 
                     except Exception as e:
