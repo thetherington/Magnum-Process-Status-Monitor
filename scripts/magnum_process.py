@@ -336,7 +336,12 @@ class processMonitor:
                     if "Cluster: Maintenance mode" in item[0]:
                         redundancyState[host]["s_maintenance"] = item[1]
 
+                    # some older magnum code uses this format (1.17.2), item[1] = Yes/No
                     elif "Cluster: Online (%s)" % (host) in item[0]:
+                        redundancyState[host]["s_online"] = item[1]
+
+                    # newer magnum code uses this format (versions TBD), item[1] = Online/Offline
+                    elif "Cluster: Server %s" % (host) in item[0]:
                         redundancyState[host]["s_online"] = item[1]
 
                     elif any(match in item[0] for match in clusterTokens):
@@ -353,7 +358,12 @@ class processMonitor:
                 # calculate redundancy status description. if server is offline then punt out a Server Error Offline
                 # if both token and ip1 is started or stopped then assume it's working Active or Standby
                 # if both do not match than assume there's a server error. probably need to add more combinations in the future.
-                if redundancyState[host]["s_online"] == "Yes":
+
+                # Yes = old version (~1.17.2), Online = newer versions...
+                if (
+                    redundancyState[host]["s_online"] == "Yes"
+                    or redundancyState[host]["s_online"] == "Online"
+                ):
 
                     if all(status == "Started" for status in clusterStatus):
                         redundancyState[host]["s_status"] = "Server Active/Online"
@@ -621,7 +631,7 @@ def main():
     if args.which == "auto":
 
         sdvn = {
-            "address": "10.9.1.31",
+            "address": "10.9.1.31",  # 172.16.230.4
             "services": [
                 "magsysmgr",
                 "magsigmonsrv",
